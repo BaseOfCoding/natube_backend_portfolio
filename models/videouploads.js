@@ -20,6 +20,15 @@ module.exports = function (sequelize, DataTypes) {
       type: DataTypes.STRING(12),
       allowNull: false,
     },
+    nickname: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+    },
+    view: {
+      type: DataTypes.INTEGER(12),
+      allowNull: false,
+      defaultValue: 0,
+    },
   });
   return videoUploads;
 };

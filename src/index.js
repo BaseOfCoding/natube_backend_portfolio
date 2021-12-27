@@ -32,9 +32,31 @@ app.use(cors());
 app.use("/videos", express.static("videos"));
 app.use("/thumbnails", express.static("thumbnails"));
 
+// gets
+
+app.get("/videomain", async (req, res) => {
+  models.videoUploads
+    .findAll({
+      order: [["view", "DESC"]],
+      attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt"],
+    })
+    .then((result) => {
+      console.log(result);
+      res.send({
+        videoDatas: result,
+      });
+    })
+    .catch((err) => {
+      console.error(`error message : ${err}`);
+      res.send("에러 발생!");
+    });
+});
+
+// posts
+
 app.post("/videouploads", async (req, res) => {
   const body = req.body;
-  const { videoUrl, thumbnailUrl, title, description, tag } = body;
+  const { videoUrl, thumbnailUrl, title, description, tag, nickname, view } = body;
   models.videoUploads
     .create({
       videoUrl,
@@ -42,9 +64,10 @@ app.post("/videouploads", async (req, res) => {
       title,
       description,
       tag,
+      nickname,
+      view,
     })
     .then((result) => {
-      console.log(`hello : ${result}`);
       res.send({ result });
     })
     .catch((err) => {
