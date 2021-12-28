@@ -48,7 +48,7 @@ app.get("/videomain", async (req, res) => {
     })
     .catch((err) => {
       console.error(`error message : ${err}`);
-      res.send("에러 발생!");
+      res.send("에러 발생!!");
     });
 });
 
