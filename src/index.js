@@ -38,7 +38,7 @@ app.get("/videomain", async (req, res) => {
   models.videoUploads
     .findAll({
       order: [["view", "DESC"]],
-      attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt"],
+      attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt", "id"],
     })
     .then((result) => {
       console.log(result);
@@ -49,6 +49,29 @@ app.get("/videomain", async (req, res) => {
     .catch((err) => {
       console.error(`error message : ${err}`);
       res.send("에러 발생!");
+    });
+});
+
+app.get("/videotag/:tag", async (req, res) => {
+  const params = req.params;
+  const { tag } = params;
+  models.videoUploads
+    .findOne({
+      where: {
+        tag: tag,
+      },
+      order: [["view", "DESC"]],
+      attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt", "id"],
+    })
+    .then((result) => {
+      // res.send(result);
+      res.send({
+        videoDatas: result,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.send("tag send error");
     });
 });
 
