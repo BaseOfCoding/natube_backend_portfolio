@@ -4,6 +4,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 const models = require("../models");
 const multer = require("multer");
+const { sequelize } = require("../models");
 
 const videos = multer({
   storage: multer.diskStorage({
@@ -72,6 +73,37 @@ app.get("/videotag/:tag", async (req, res) => {
     .catch((err) => {
       console.log(err);
       res.send("tag send error");
+    });
+});
+
+app.get("/videoGet/:id", async (req, res) => {
+  const params = req.params;
+  const { id } = params;
+  models.videoUploads
+    .findOne({
+      where: { id: id },
+    })
+    .then((result) => {
+      console.log(result);
+      res.send({
+        videoData: result,
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+});
+
+app.get("/viewupdate/:id", async (req, res) => {
+  const { id } = req.params;
+
+  models.videoUploads
+    .increment({ view: 1 }, { where: { id } })
+    .then((result) => {
+      res.send({ result: true });
+    })
+    .catch((err) => {
+      console.error(err);
     });
 });
 
