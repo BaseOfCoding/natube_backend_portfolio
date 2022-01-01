@@ -5,6 +5,7 @@ const port = process.env.PORT || 8080;
 const models = require("../models");
 const multer = require("multer");
 const { sequelize } = require("../models");
+const { send } = require("express/lib/response");
 
 const videos = multer({
   storage: multer.diskStorage({
@@ -84,10 +85,38 @@ app.get("/videoGet/:id", async (req, res) => {
       where: { id: id },
     })
     .then((result) => {
-      console.log(result);
       res.send({
         videoData: result,
       });
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+});
+
+app.get("/videoGet/:id/recommendation", async (req, res) => {
+  const { id } = req.params;
+
+  models.videoUploads
+    .findOne({
+      where: { id: id },
+    })
+    .then((videos) => {
+      models.videoUploads
+        .findAll({
+          where: {
+            tag: videos.tag,
+            id: { [models.Sequelize.Op.ne]: id },
+          },
+          order: [["view", "DESC"]],
+        })
+        .then((result) => {
+          res.send({ videoDatas: result });
+        })
+        .catch((err) => {
+          console.error(err);
+          res.status(500).send("에러 발생!");
+        });
     })
     .catch((err) => {
       console.error(err);
@@ -100,7 +129,9 @@ app.get("/viewupdate/:id", async (req, res) => {
   models.videoUploads
     .increment({ view: 1 }, { where: { id } })
     .then((result) => {
-      res.send({ result: true });
+      res.send({
+        result: true,
+      });
     })
     .catch((err) => {
       console.error(err);
