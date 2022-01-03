@@ -4,6 +4,8 @@ const app = express();
 const port = process.env.PORT || 8080;
 const models = require("../models");
 const multer = require("multer");
+const sharp = require("sharp");
+const fs = require("fs");
 const { sequelize } = require("../models");
 const { send } = require("express/lib/response");
 
@@ -164,7 +166,6 @@ app.post("/videouploads", async (req, res) => {
 
 app.post("/videos", videos.single("video"), (req, res) => {
   const file = req.file;
-  console.log(file);
   res.send({
     videoUrl: file.path,
   });
@@ -172,7 +173,24 @@ app.post("/videos", videos.single("video"), (req, res) => {
 
 app.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
-  console.log(file);
+  try {
+    sharp(req.file.path)
+      .resize({ width: 1024, height: 768 })
+      .withMetadata()
+      .toBuffer((err, buffer) => {
+        if (err) {
+          throw err;
+        }
+        fs.writeFile(req.file.path, buffer, (err) => {
+          if (err) {
+            throw err;
+          }
+        });
+      });
+  } catch (err) {
+    console.error("image resize error : " + err);
+  }
+
   res.send({
     thumbnailUrl: file.path,
   });
