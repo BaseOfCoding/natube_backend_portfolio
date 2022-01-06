@@ -29,6 +29,10 @@ module.exports = function (sequelize, DataTypes) {
       allowNull: false,
       defaultValue: 0,
     },
+    profileUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
   });
   return videoUploads;
 };

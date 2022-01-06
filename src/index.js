@@ -6,8 +6,9 @@ const models = require("../models");
 const multer = require("multer");
 const sharp = require("sharp");
 const fs = require("fs");
-const { sequelize } = require("../models");
-const { send } = require("express/lib/response");
+const cookieParser = require("cookie-parser");
+const session = require("express-session");
+const fileStorage = require("session-file-store")(session);
 
 const videos = multer({
   storage: multer.diskStorage({
@@ -31,10 +32,35 @@ const thumbnails = multer({
   }),
 });
 
+const profiles = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, "profileImages");
+    },
+    filename: function (req, file, cb) {
+      cb(null, `${Date.now()}_${file.originalname}`);
+    },
+  }),
+});
+
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    credentials: true,
+    origin: true,
+  })
+);
 app.use("/videos", express.static("videos"));
 app.use("/thumbnails", express.static("thumbnails"));
+app.use("/profileImages", express.static("profileImages"));
+// app.use(cookieParser());
+// app.use(
+//   session({
+//     secret: "keyboard cat",
+//     resave: false,
+//     saveUninitialized: true,
+//   })
+// );
 
 // gets
 
@@ -45,7 +71,6 @@ app.get("/videomain", async (req, res) => {
       attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt", "id"],
     })
     .then((result) => {
-      console.log(result);
       res.send({
         videoDatas: result,
       });
@@ -68,13 +93,12 @@ app.get("/videotag/:tag", async (req, res) => {
       attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt", "id"],
     })
     .then((result) => {
-      // res.send(result);
       res.send({
         videoDatas: result,
       });
     })
     .catch((err) => {
-      console.log(err);
+      console.error(err);
       res.send("tag send error");
     });
 });
@@ -144,7 +168,7 @@ app.get("/viewupdate/:id", async (req, res) => {
 
 app.post("/videouploads", async (req, res) => {
   const body = req.body;
-  const { videoUrl, thumbnailUrl, title, description, tag, nickname, view } = body;
+  const { videoUrl, thumbnailUrl, title, description, tag, nickname, view, profileUrl } = body;
   models.videoUploads
     .create({
       videoUrl,
@@ -154,6 +178,7 @@ app.post("/videouploads", async (req, res) => {
       tag,
       nickname,
       view,
+      profileUrl,
     })
     .then((result) => {
       res.send({ result });
@@ -194,6 +219,61 @@ app.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   res.send({
     thumbnailUrl: file.path,
   });
+});
+
+app.post("/profileImages", thumbnails.single("image"), (req, res) => {
+  const file = req.file;
+  try {
+    sharp(file.path)
+      .resize({ width: 200, height: 200 })
+      .withMetadata()
+      .toBuffer((err, buffer) => {
+        if (err) {
+          throw err;
+        }
+        fs.writeFile(file.path, buffer, (err) => {
+          if (err) {
+            throw err;
+          }
+        });
+      });
+  } catch (err) {
+    console.error("image resize error : " + err);
+  }
+
+  res.send({
+    thumbnailUrl: file.path,
+  });
+});
+
+app.post("/logincheck", async (req, res) => {
+  const body = req.body;
+  const { user_id, password } = body;
+  if (user_id == "" || password == "") {
+    res.send("undefined");
+    return;
+  }
+
+  models.users
+    .findOne({
+      where: {
+        user_id: user_id,
+      },
+    })
+    .then((result) => {
+      if (result == null || result.password != password) {
+        res.send("error");
+      } else {
+        // req.session.logined = true;
+        // req.session.user_id = user_id;
+        res.send({
+          resultData: result,
+        });
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+    });
 });
 
 app.listen(port, () => {
