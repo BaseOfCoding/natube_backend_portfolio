@@ -6,9 +6,10 @@ const models = require("../models");
 const multer = require("multer");
 const sharp = require("sharp");
 const fs = require("fs");
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
-const session = require("express-session");
-const fileStorage = require("session-file-store")(session);
+const { auth } = require("../middleware/auth");
 
 const videos = multer({
   storage: multer.diskStorage({
@@ -53,18 +54,11 @@ app.use(
 app.use("/videos", express.static("videos"));
 app.use("/thumbnails", express.static("thumbnails"));
 app.use("/profileImages", express.static("profileImages"));
-// app.use(cookieParser());
-// app.use(
-//   session({
-//     secret: "keyboard cat",
-//     resave: false,
-//     saveUninitialized: true,
-//   })
-// );
+app.use(cookieParser());
 
 // gets
 
-app.get("/videomain", async (req, res) => {
+app.get("/api/videomain", async (req, res) => {
   models.videoUploads
     .findAll({
       order: [["view", "DESC"]],
@@ -81,7 +75,7 @@ app.get("/videomain", async (req, res) => {
     });
 });
 
-app.get("/videotag/:tag", async (req, res) => {
+app.get("/api/videotag/:tag", async (req, res) => {
   const params = req.params;
   const { tag } = params;
   models.videoUploads
@@ -103,7 +97,7 @@ app.get("/videotag/:tag", async (req, res) => {
     });
 });
 
-app.get("/videoGet/:id", async (req, res) => {
+app.get("/api/videoGet/:id", async (req, res) => {
   const params = req.params;
   const { id } = params;
   models.videoUploads
@@ -120,7 +114,7 @@ app.get("/videoGet/:id", async (req, res) => {
     });
 });
 
-app.get("/videoGet/:id/recommendation", async (req, res) => {
+app.get("/api/videoGet/:id/recommendation", async (req, res) => {
   const { id } = req.params;
 
   models.videoUploads
@@ -149,7 +143,7 @@ app.get("/videoGet/:id/recommendation", async (req, res) => {
     });
 });
 
-app.get("/viewupdate/:id", async (req, res) => {
+app.get("/api/viewupdate/:id", async (req, res) => {
   const { id } = req.params;
 
   models.videoUploads
@@ -166,7 +160,7 @@ app.get("/viewupdate/:id", async (req, res) => {
 
 // posts
 
-app.post("/videouploads", async (req, res) => {
+app.post("/api/videouploads", async (req, res) => {
   const body = req.body;
   const { videoUrl, thumbnailUrl, title, description, tag, nickname, view, profileUrl } = body;
   models.videoUploads
@@ -189,14 +183,14 @@ app.post("/videouploads", async (req, res) => {
     });
 });
 
-app.post("/videos", videos.single("video"), (req, res) => {
+app.post("/api/videos", videos.single("video"), (req, res) => {
   const file = req.file;
   res.send({
     videoUrl: file.path,
   });
 });
 
-app.post("/thumbnails", thumbnails.single("image"), (req, res) => {
+app.post("/api/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(req.file.path)
@@ -221,7 +215,7 @@ app.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   });
 });
 
-app.post("/profileImages", thumbnails.single("image"), (req, res) => {
+app.post("/api/profileImages", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(file.path)
@@ -246,7 +240,7 @@ app.post("/profileImages", thumbnails.single("image"), (req, res) => {
   });
 });
 
-app.post("/logincheck", async (req, res) => {
+app.post("/api/users/signin", async (req, res) => {
   const body = req.body;
   const { user_id, password } = body;
   if (user_id == "" || password == "") {
@@ -261,20 +255,57 @@ app.post("/logincheck", async (req, res) => {
       },
     })
     .then((result) => {
-      if (result == null || result.password != password) {
+      if (result == null || result.password != passwordEncryption(password)) {
         res.send("error");
       } else {
-        // req.session.logined = true;
-        // req.session.user_id = user_id;
-        res.send({
-          resultData: result,
-        });
+        let token = createToken(user_id);
+        models.users.update({ token: token }, { where: { user_id: user_id } });
+        res.cookie("x_auth", token).status(200).send({ resultData: result });
       }
     })
     .catch((err) => {
       console.error(err);
     });
 });
+
+app.post("/api/users/signup", async (req, res) => {
+  const body = req.body;
+  const { user_id, password, profile_url, nickname } = body;
+  let tempCryptoPassword = password;
+
+  models.users
+    .findAll({
+      where: {
+        user_id: user_id,
+      },
+    })
+    .then((result) => {
+      if (result.length == 0) {
+        models.users
+          .create({
+            user_id,
+            password: passwordEncryption(tempCryptoPassword),
+            nickname,
+            profileUrl: profile_url,
+          })
+          .then((result) => {
+            res.send(result);
+          })
+          .catch((err) => {
+            console.error(err);
+            res.send("error");
+          });
+      } else {
+        res.send("아이디 존재");
+      }
+    })
+    .catch((err) => {
+      console.error("signup error : ", err);
+      res.send("signup error");
+    });
+});
+
+app.post("/api/users/auth", auth, (req, res) => {});
 
 app.listen(port, () => {
   console.log("서버 돌아가는 중...");
@@ -288,3 +319,12 @@ app.listen(port, () => {
       process.exit();
     });
 });
+
+function passwordEncryption(password) {
+  return crypto.createHash("sha512").update(password).digest("hex");
+}
+
+function createToken(user_id) {
+  let token = jwt.sign(user_id, "secretToken");
+  return token;
+}
