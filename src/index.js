@@ -62,7 +62,7 @@ app.get("/api/videomain", async (req, res) => {
   models.videoUploads
     .findAll({
       order: [["view", "DESC"]],
-      attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt", "id"],
+      attributes: ["thumbnailUrl", "title", "nickname", "view", "createdAt", "id", "profileUrl"],
     })
     .then((result) => {
       res.send({
@@ -162,7 +162,7 @@ app.get("/api/viewupdate/:id", async (req, res) => {
 
 app.post("/api/videouploads", async (req, res) => {
   const body = req.body;
-  const { videoUrl, thumbnailUrl, title, description, tag, nickname, view, profileUrl } = body;
+  const { videoUrl, thumbnailUrl, title, description, tag, nickname, view, profileUrl, userIP } = body;
   models.videoUploads
     .create({
       videoUrl,
@@ -173,6 +173,7 @@ app.post("/api/videouploads", async (req, res) => {
       nickname,
       view,
       profileUrl,
+      userIP,
     })
     .then((result) => {
       res.send({ result });
@@ -183,14 +184,14 @@ app.post("/api/videouploads", async (req, res) => {
     });
 });
 
-app.post("/api/videos", videos.single("video"), (req, res) => {
+app.post("/api/media/videos", videos.single("video"), (req, res) => {
   const file = req.file;
   res.send({
     videoUrl: file.path,
   });
 });
 
-app.post("/api/thumbnails", thumbnails.single("image"), (req, res) => {
+app.post("/api/media/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(req.file.path)
@@ -215,7 +216,7 @@ app.post("/api/thumbnails", thumbnails.single("image"), (req, res) => {
   });
 });
 
-app.post("/api/profileImages", thumbnails.single("image"), (req, res) => {
+app.post("/api/media/profileImages", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(file.path)
