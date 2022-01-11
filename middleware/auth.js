@@ -1,7 +1,7 @@
 const models = require("../models");
 
 let auth = (req, res, next) => {
-  let token = req.body.cookie;
+  let token = req.body.token;
 
   if (token != undefined) {
     models.users
@@ -26,6 +26,8 @@ let auth = (req, res, next) => {
         res.send("error");
         return;
       });
+  } else {
+    res.send("error");
   }
 };
 

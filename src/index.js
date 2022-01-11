@@ -33,7 +33,7 @@ const thumbnails = multer({
   }),
 });
 
-const profiles = multer({
+const profileImages = multer({
   storage: multer.diskStorage({
     destination: function (req, file, cb) {
       cb(null, "profileImages");
@@ -216,7 +216,7 @@ app.post("/api/media/thumbnails", thumbnails.single("image"), (req, res) => {
   });
 });
 
-app.post("/api/media/profileImages", thumbnails.single("image"), (req, res) => {
+app.post("/api/media/profileImages", profileImages.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(file.path)
@@ -237,7 +237,7 @@ app.post("/api/media/profileImages", thumbnails.single("image"), (req, res) => {
   }
 
   res.send({
-    thumbnailUrl: file.path,
+    profileUrl: file.path,
   });
 });
 
@@ -261,7 +261,9 @@ app.post("/api/users/signin", async (req, res) => {
       } else {
         let token = createToken(user_id);
         models.users.update({ token: token }, { where: { user_id: user_id } });
-        res.cookie("x_auth", token).status(200).send({ resultData: result });
+        res.send({
+          resultData: result,
+        });
       }
     })
     .catch((err) => {
@@ -271,38 +273,54 @@ app.post("/api/users/signin", async (req, res) => {
 
 app.post("/api/users/signup", async (req, res) => {
   const body = req.body;
-  const { user_id, password, profile_url, nickname } = body;
+  const { user_id, password, profileUrl, nickname } = body;
   let tempCryptoPassword = password;
 
   models.users
     .findAll({
       where: {
-        user_id: user_id,
+        user_id,
       },
     })
     .then((result) => {
       if (result.length == 0) {
         models.users
-          .create({
-            user_id,
-            password: passwordEncryption(tempCryptoPassword),
-            nickname,
-            profileUrl: profile_url,
+          .findAll({
+            where: {
+              nickname,
+            },
           })
           .then((result) => {
-            res.send(result);
+            if (result.length == 0) {
+              models.users
+                .create({
+                  user_id,
+                  password: passwordEncryption(tempCryptoPassword),
+                  nickname,
+                  profileUrl,
+                })
+                .then((result) => {
+                  res.send(result);
+                })
+                .catch((err) => {
+                  console.error(err);
+                  res.send("error");
+                });
+            } else {
+              res.send("nickname_duplicate");
+            }
           })
           .catch((err) => {
-            console.error(err);
-            res.send("error");
+            console.error("signup nickname checking error : ", err);
+            res.send("signup nickname checking error");
           });
       } else {
-        res.send("아이디 존재");
+        res.send("id_duplicate");
       }
     })
     .catch((err) => {
-      console.error("signup error : ", err);
-      res.send("signup error");
+      console.error("signup id checking error : ", err);
+      res.send("signup id checking error");
     });
 });
 
