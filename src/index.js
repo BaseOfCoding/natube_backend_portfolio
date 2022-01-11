@@ -263,6 +263,7 @@ app.post("/api/users/signin", async (req, res) => {
         models.users.update({ token: token }, { where: { user_id: user_id } });
         res.send({
           resultData: result,
+          token: token,
         });
       }
     })
