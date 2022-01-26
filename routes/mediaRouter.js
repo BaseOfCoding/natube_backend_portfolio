@@ -32,7 +32,7 @@ router.get("/videotag/:tag", async (req, res) => {
         tag: tag,
       },
       order: [["view", "DESC"]],
-      attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt", "id"],
+      attributes: ["thumbnailUrl", "title", "nickname", "view", "createdAt", "id"],
     })
     .then((result) => {
       res.send({
