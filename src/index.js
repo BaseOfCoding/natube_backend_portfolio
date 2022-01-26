@@ -1,48 +1,17 @@
+/* 라이브러리 영역 */
+
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const port = process.env.PORT || 8080;
 const models = require("../models");
-const multer = require("multer");
-const sharp = require("sharp");
-const fs = require("fs");
-const crypto = require("crypto");
-const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
-const { auth } = require("../middleware/auth");
+const port = process.env.PORT || 8080;
+const mediaRouter = require("../routes/mediaRouter");
+const usersRouter = require("../routes/usersRouter");
+const uploadsRouter = require("../routes/uploadsRouter");
 
-const videos = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "videos");
-    },
-    filename: function (req, file, cb) {
-      cb(null, `${Date.now()}_${file.originalname}`);
-    },
-  }),
-});
-
-const thumbnails = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "thumbnails");
-    },
-    filename: function (req, file, cb) {
-      cb(null, `${Date.now()}_${file.originalname}`);
-    },
-  }),
-});
-
-const profileImages = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "profileImages");
-    },
-    filename: function (req, file, cb) {
-      cb(null, `${Date.now()}_${file.originalname}`);
-    },
-  }),
-});
+/* express를 이용해서, 받는 파일과 보내는 파일을 json 형식으로 만들고
+cors 라이브러리로, cors ( Cross-Origin-Resource-Sharing : 교차 출처 리소스 공유 ) 를 해결하고
+express에서 제공하는 router로, 해당 Url로 서버에 요청하면, 각각 js파일로 넘어가서 get,post를 요청하게 함. */
 
 app.use(express.json());
 app.use(
@@ -54,281 +23,13 @@ app.use(
 app.use("/videos", express.static("videos"));
 app.use("/thumbnails", express.static("thumbnails"));
 app.use("/profileImages", express.static("profileImages"));
-app.use(cookieParser());
-
-// gets
-
-app.get("/api/videomain", async (req, res) => {
-  models.videoUploads
-    .findAll({
-      order: [["view", "DESC"]],
-      attributes: ["thumbnailUrl", "title", "nickname", "view", "createdAt", "id", "profileUrl"],
-    })
-    .then((result) => {
-      res.send({
-        videoDatas: result,
-      });
-    })
-    .catch((err) => {
-      console.error(`error message : ${err}`);
-      res.send("에러 발생!!");
-    });
-});
-
-app.get("/api/videotag/:tag", async (req, res) => {
-  const params = req.params;
-  const { tag } = params;
-  models.videoUploads
-    .findOne({
-      where: {
-        tag: tag,
-      },
-      order: [["view", "DESC"]],
-      attributes: ["thumbnailUrl", "title", "nickname", "view", "updatedAt", "id"],
-    })
-    .then((result) => {
-      res.send({
-        videoDatas: result,
-      });
-    })
-    .catch((err) => {
-      console.error(err);
-      res.send("tag send error");
-    });
-});
-
-app.get("/api/videoGet/:id", async (req, res) => {
-  const params = req.params;
-  const { id } = params;
-  models.videoUploads
-    .findOne({
-      where: { id: id },
-    })
-    .then((result) => {
-      res.send({
-        videoData: result,
-      });
-    })
-    .catch((err) => {
-      console.error(err);
-    });
-});
-
-app.get("/api/videoGet/:id/recommendation", async (req, res) => {
-  const { id } = req.params;
-
-  models.videoUploads
-    .findOne({
-      where: { id: id },
-    })
-    .then((videos) => {
-      models.videoUploads
-        .findAll({
-          where: {
-            tag: videos.tag,
-            id: { [models.Sequelize.Op.ne]: id },
-          },
-          order: [["view", "DESC"]],
-        })
-        .then((result) => {
-          res.send({ videoDatas: result });
-        })
-        .catch((err) => {
-          console.error(err);
-          res.status(500).send("에러 발생!");
-        });
-    })
-    .catch((err) => {
-      console.error(err);
-    });
-});
-
-app.get("/api/viewupdate/:id", async (req, res) => {
-  const { id } = req.params;
-
-  models.videoUploads
-    .increment({ view: 1 }, { where: { id } })
-    .then((result) => {
-      res.send({
-        result: true,
-      });
-    })
-    .catch((err) => {
-      console.error(err);
-    });
-});
-
-// posts
-
-app.post("/api/videouploads", async (req, res) => {
-  const body = req.body;
-  const { videoUrl, thumbnailUrl, title, description, tag, nickname, view, profileUrl, userIP } = body;
-  models.videoUploads
-    .create({
-      videoUrl,
-      thumbnailUrl,
-      title,
-      description,
-      tag,
-      nickname,
-      view,
-      profileUrl,
-      userIP,
-    })
-    .then((result) => {
-      res.send({ result });
-    })
-    .catch((err) => {
-      console.error(err);
-      res.status(400).send("업로드에 문제가 발생했습니다.");
-    });
-});
-
-app.post("/api/media/videos", videos.single("video"), (req, res) => {
-  const file = req.file;
-  res.send({
-    videoUrl: file.path,
-  });
-});
-
-app.post("/api/media/thumbnails", thumbnails.single("image"), (req, res) => {
-  const file = req.file;
-  try {
-    sharp(req.file.path)
-      .resize({ width: 1024, height: 768 })
-      .withMetadata()
-      .toBuffer((err, buffer) => {
-        if (err) {
-          throw err;
-        }
-        fs.writeFile(req.file.path, buffer, (err) => {
-          if (err) {
-            throw err;
-          }
-        });
-      });
-  } catch (err) {
-    console.error("image resize error : " + err);
-  }
-
-  res.send({
-    thumbnailUrl: file.path,
-  });
-});
-
-app.post("/api/media/profileImages", profileImages.single("image"), (req, res) => {
-  const file = req.file;
-  try {
-    sharp(file.path)
-      .resize({ width: 200, height: 200 })
-      .withMetadata()
-      .toBuffer((err, buffer) => {
-        if (err) {
-          throw err;
-        }
-        fs.writeFile(file.path, buffer, (err) => {
-          if (err) {
-            throw err;
-          }
-        });
-      });
-  } catch (err) {
-    console.error("image resize error : " + err);
-  }
-
-  res.send({
-    profileUrl: file.path,
-  });
-});
-
-app.post("/api/users/signin", async (req, res) => {
-  const body = req.body;
-  const { user_id, password } = body;
-  if (user_id == "" || password == "") {
-    res.send("undefined");
-    return;
-  }
-
-  models.users
-    .findOne({
-      where: {
-        user_id: user_id,
-      },
-    })
-    .then((result) => {
-      if (result == null || result.password != passwordEncryption(password)) {
-        res.send("error");
-      } else {
-        let token = createToken(user_id);
-        models.users.update({ token: token }, { where: { user_id: user_id } });
-        res.send({
-          resultData: result,
-          token: token,
-        });
-      }
-    })
-    .catch((err) => {
-      console.error(err);
-    });
-});
-
-app.post("/api/users/signup", async (req, res) => {
-  const body = req.body;
-  const { user_id, password, profileUrl, nickname } = body;
-  let tempCryptoPassword = password;
-
-  models.users
-    .findAll({
-      where: {
-        user_id,
-      },
-    })
-    .then((result) => {
-      if (result.length == 0) {
-        models.users
-          .findAll({
-            where: {
-              nickname,
-            },
-          })
-          .then((result) => {
-            if (result.length == 0) {
-              models.users
-                .create({
-                  user_id,
-                  password: passwordEncryption(tempCryptoPassword),
-                  nickname,
-                  profileUrl,
-                })
-                .then((result) => {
-                  res.send(result);
-                })
-                .catch((err) => {
-                  console.error(err);
-                  res.send("error");
-                });
-            } else {
-              res.send("nickname_duplicate");
-            }
-          })
-          .catch((err) => {
-            console.error("signup nickname checking error : ", err);
-            res.send("signup nickname checking error");
-          });
-      } else {
-        res.send("id_duplicate");
-      }
-    })
-    .catch((err) => {
-      console.error("signup id checking error : ", err);
-      res.send("signup id checking error");
-    });
-});
-
-app.post("/api/users/auth", auth, (req, res) => {});
+app.use("/api/media", mediaRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/uploads", uploadsRouter);
 
 app.listen(port, () => {
   console.log("서버 돌아가는 중...");
+  autoCalling();
   models.sequelize
     .sync()
     .then(() => {
@@ -340,11 +41,11 @@ app.listen(port, () => {
     });
 });
 
-function passwordEncryption(password) {
-  return crypto.createHash("sha512").update(password).digest("hex");
-}
-
-function createToken(user_id) {
-  let token = jwt.sign(user_id, "secretToken");
-  return token;
+/* heroku에서는, 15분인가 30분인가마다 요청이 없다면, 폴더에 있는 media 파일들이 없어지게 된다.
+그렇기 때문에, 600000ms => 10분마다 호출을 시켜서, 계속 자기 스스로 요청을 해서 파일이 보존되도록 만들었다. */
+function autoCalling() {
+  setTimeout(() => {
+    console.log("10분마다 호출 완료");
+    autoCalling();
+  }, 600000);
 }

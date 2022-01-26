@@ -1,5 +1,6 @@
 const models = require("../models");
 
+// 인증 미들웨어, token값이 맞는 지 아닌 지를 판단하고, 맞다면 인증과 함께, user_id, 닉네임, 프로필이 저장 된 폴더 url을 넘긴다.
 let auth = (req, res, next) => {
   let token = req.body.token;
 
