@@ -86,7 +86,7 @@ router.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(req.file.path)
-      .resize(1280, 720, { fit: "fill" })
+      .resize({ width: 1280, height: 720 })
       .withMetadata()
       .toBuffer((err, buffer) => {
         if (err) {
@@ -112,7 +112,7 @@ router.post("/profileImages", profileImages.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(file.path)
-      .resize(200, 200, { fit: "fill" })
+      .resize({ width: 200, height: 200 })
       .withMetadata()
       .toBuffer((err, buffer) => {
         if (err) {
