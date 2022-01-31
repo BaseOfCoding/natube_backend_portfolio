@@ -20,9 +20,9 @@ app.use(
     origin: true,
   })
 );
-app.use("../videos", express.static("videos"));
-app.use("../thumbnails", express.static("thumbnails"));
-app.use("../profileImages", express.static("profileImages"));
+app.use("/videos", express.static("videos"));
+app.use("/thumbnails", express.static("thumbnails"));
+app.use("/profileImages", express.static("profileImages"));
 app.use("/api/media", mediaRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/uploads", uploadsRouter);
