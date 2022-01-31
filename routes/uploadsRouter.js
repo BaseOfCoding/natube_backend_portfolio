@@ -81,7 +81,7 @@ router.post("/videos", videos.single("video"), (req, res) => {
   });
 });
 
-// 위와 같이 썸네일을 업로드 할 경우 thumbnails 폴더에 해당 이미지 파일이 올라가지만, sharp라는 라이브러리를 이용해서, 썸네일 이미지를 1024 * 768 사이즈로 리사이징해서 저장하는 post 요청 함수
+// 위와 같이 썸네일을 업로드 할 경우 thumbnails 폴더에 해당 이미지 파일이 올라가지만, sharp라는 라이브러리를 이용해서, 썸네일 이미지를 1280 * 720 사이즈로 리사이징해서 저장하는 post 요청 함수
 router.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
