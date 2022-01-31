@@ -85,14 +85,14 @@ router.post("/videos", videos.single("video"), (req, res) => {
 router.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
-    sharp(req.file.path)
+    sharp(file.path)
       .resize({ width: 1280, height: 720 })
       .withMetadata()
       .toBuffer((err, buffer) => {
         if (err) {
           throw err;
         }
-        fs.writeFile(req.file.path, buffer, (err) => {
+        fs.writeFile(file.path, buffer, (err) => {
           if (err) {
             throw err;
           }
