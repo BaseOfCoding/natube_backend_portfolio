@@ -44,9 +44,9 @@ const profileImages = multer({
   }),
 });
 
-app.use("/videos", express.static("videos"));
-app.use("/thumbnails", express.static("thumbnails"));
-app.use("/profileImages", express.static("profileImages"));
+app.use("../videos", express.static("videos"));
+app.use("../thumbnails", express.static("thumbnails"));
+app.use("../profileImages", express.static("profileImages"));
 
 // 업로드 창에서의 비디오 / 썸네일 / 제목 / 설명 / 태그 등등의 정보들을 받아서, db에 저장하는 post 요청 함수
 router.post("/videouploads", async (req, res) => {
@@ -86,7 +86,7 @@ router.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(req.file.path)
-      .resize({ width: 1280, height: 720 })
+      .resize({ fit: "fill", width: 1280, height: 720 })
       .withMetadata()
       .toBuffer((err, buffer) => {
         if (err) {
@@ -112,7 +112,7 @@ router.post("/profileImages", profileImages.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(file.path)
-      .resize({ width: 200, height: 200 })
+      .resize({ fit: "fill", width: 200, height: 200 })
       .withMetadata()
       .toBuffer((err, buffer) => {
         if (err) {
