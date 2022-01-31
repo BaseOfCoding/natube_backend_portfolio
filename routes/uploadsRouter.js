@@ -74,7 +74,7 @@ router.post("/videouploads", async (req, res) => {
 });
 
 // 비디오를 업로드하면, videos 폴더에 해당 파일이 올라가고, 해당 video 폴더의 url과 파일이름을 클라이언트에 보내주는 post 요청 함수
-router.post("../videos", videos.single("video"), (req, res) => {
+router.post("/videos", videos.single("video"), (req, res) => {
   const file = req.file;
   res.send({
     videoUrl: file.path,
@@ -82,11 +82,11 @@ router.post("../videos", videos.single("video"), (req, res) => {
 });
 
 // 위와 같이 썸네일을 업로드 할 경우 thumbnails 폴더에 해당 이미지 파일이 올라가지만, sharp라는 라이브러리를 이용해서, 썸네일 이미지를 1280 * 720 사이즈로 리사이징해서 저장하는 post 요청 함수
-router.post("../thumbnails", thumbnails.single("image"), (req, res) => {
+router.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(req.file.path)
-      .resize({ fit: "fill", width: 1280, height: 720 })
+      .resize({ width: 1280, height: 720 })
       .withMetadata()
       .toBuffer((err, buffer) => {
         if (err) {
@@ -108,11 +108,11 @@ router.post("../thumbnails", thumbnails.single("image"), (req, res) => {
 });
 
 // 프로필 이미지를 저장하는 post 요청 함수, 이것도 마찬가지로, 200 * 200 사이즈로 리사이징해서 저장하는 post 요청하는 함수
-router.post("../profileImages", profileImages.single("image"), (req, res) => {
+router.post("/profileImages", profileImages.single("image"), (req, res) => {
   const file = req.file;
   try {
     sharp(file.path)
-      .resize({ fit: "fill", width: 200, height: 200 })
+      .resize({ width: 200, height: 200 })
       .withMetadata()
       .toBuffer((err, buffer) => {
         if (err) {
