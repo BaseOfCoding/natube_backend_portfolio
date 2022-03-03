@@ -29,7 +29,6 @@ app.use("/api/uploads", uploadsRouter);
 
 app.listen(port, () => {
   console.log("서버 돌아가는 중...");
-  autoCalling();
   models.sequelize
     .sync()
     .then(() => {
@@ -40,12 +39,3 @@ app.listen(port, () => {
       process.exit();
     });
 });
-
-/* heroku에서는, 15분인가 30분인가마다 요청이 없다면, 폴더에 있는 media 파일들이 없어지게 된다.
-그렇기 때문에, 600000ms => 10분마다 호출을 시켜서, 계속 자기 스스로 요청을 해서 파일이 보존되도록 만들었다. */
-function autoCalling() {
-  setTimeout(() => {
-    console.log("10분마다 호출 완료");
-    autoCalling();
-  }, 600000);
-}

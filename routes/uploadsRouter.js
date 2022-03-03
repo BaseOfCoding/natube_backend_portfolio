@@ -5,41 +5,46 @@ const app = express();
 const router = express.Router();
 const models = require("../models");
 const multer = require("multer");
+const multerS3 = require("multer-s3");
 const sharp = require("sharp");
 const fs = require("fs");
 
+// AWS
+const AWS = require("aws-sdk");
+const BUCKET_NAME = "natubemediaserver";
+const ACCESS_KEY = "AKIATOVVDUL6D6MRYM25";
+const PRIVATE_ACCESS_KEY = "Xij+FZTYIKEyXvhy69HrOE+Ye/yjsXvh/KFkhXEo";
+const s3 = new AWS.S3({ accessKeyId: ACCESS_KEY, secretAccessKey: PRIVATE_ACCESS_KEY });
+
 // 업로드 되는 비디오의 위치와, 파일이름을 지정한다.
 const videos = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "videos");
-    },
-    filename: function (req, file, cb) {
-      cb(null, `${Date.now()}_${file.originalname}`);
+  storage: multerS3({
+    s3: s3,
+    bucket: BUCKET_NAME,
+    key: (req, file, cb) => {
+      cb(null, `videos/${Date.now()}_${file.originalname.split(".").pop()}`);
     },
   }),
 });
 
 // 업로드 되는 썸네일의 위치와, 파일이름을 지정한다.
 const thumbnails = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "thumbnails");
-    },
-    filename: function (req, file, cb) {
-      cb(null, `${Date.now()}_${file.originalname}`);
+  storage: multerS3({
+    s3: s3,
+    bucket: BUCKET_NAME,
+    key: (req, file, cb) => {
+      cb(null, `thumbnails/${Date.now()}_${file.originalname.split(".").pop()}`);
     },
   }),
 });
 
 // 업로드 되는 프로필 이미지의 위치와, 파일이름을 지정한다.
 const profileImages = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "profileImages");
-    },
-    filename: function (req, file, cb) {
-      cb(null, `${Date.now()}_${file.originalname}`);
+  storage: multerS3({
+    s3: s3,
+    bucket: BUCKET_NAME,
+    key: (req, file, cb) => {
+      cb(null, `profileImages/${Date.now()}_${file.originalname.split(".").pop()}`);
     },
   }),
 });
@@ -76,8 +81,9 @@ router.post("/videouploads", async (req, res) => {
 // 비디오를 업로드하면, videos 폴더에 해당 파일이 올라가고, 해당 video 폴더의 url과 파일이름을 클라이언트에 보내주는 post 요청 함수
 router.post("/videos", videos.single("video"), (req, res) => {
   const file = req.file;
+
   res.send({
-    videoUrl: file.path,
+    videoUrl: file.location,
   });
 });
 
@@ -103,7 +109,7 @@ router.post("/thumbnails", thumbnails.single("image"), (req, res) => {
   }
 
   res.send({
-    thumbnailUrl: file.path,
+    thumbnailUrl: file.location,
   });
 });
 
@@ -129,7 +135,7 @@ router.post("/profileImages", profileImages.single("image"), (req, res) => {
   }
 
   res.send({
-    profileUrl: file.path,
+    profileUrl: file.location,
   });
 });
 
