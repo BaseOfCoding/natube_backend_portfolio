@@ -21,6 +21,7 @@ const videos = multer({
   storage: multerS3({
     s3: s3,
     bucket: BUCKET_NAME,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       cb(null, `videos/${Date.now()}_${file.originalname.split(".").pop()}`);
     },
@@ -32,6 +33,7 @@ const thumbnails = multer({
   storage: multerS3({
     s3: s3,
     bucket: BUCKET_NAME,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       cb(null, `thumbnails/${Date.now()}_${file.originalname.split(".").pop()}`);
     },
@@ -43,6 +45,7 @@ const profileImages = multer({
   storage: multerS3({
     s3: s3,
     bucket: BUCKET_NAME,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       cb(null, `profileImages/${Date.now()}_${file.originalname.split(".").pop()}`);
     },
