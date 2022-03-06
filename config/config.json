@@ -1,5 +1,13 @@
 {
   "development": {
+    "username": "postgres://yayhfoizruvvhd",
+    "password": "608887976c3155d72e87feea8fbc178f4783e503f5b3e6e801174dd948764e06",
+    "database": "testdb",
+    "host": "ec2-35-153-35-94.compute-1.amazonaws.com:5432",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  },
+  "developmentzz": {
     "dialect": "sqlite",
     "storage": "./database.sqlite3"
   },
@@ -8,6 +16,17 @@
     "storage": ":memory"
   },
   "production": {
+    "username": "postgres://yayhfoizruvvhd",
+    "password": "608887976c3155d72e87feea8fbc178f4783e503f5b3e6e801174dd948764e06",
+    "database": "testdb",
+    "host": "ec2-35-153-35-94.compute-1.amazonaws.com:5432",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  },
+  "productionzz": {
+    "use_env_variable": "postgres://yayhfoizruvvhd:608887976c3155d72e87feea8fbc178f4783e503f5b3e6e801174dd948764e06@ec2-35-153-35-94.compute-1.amazonaws.com:5432/dbc5r4cjb6ejvf"
+  },
+  "testing": {
     "dialect": "sqlite",
     "storage": "./database.sqlite3"
   }
