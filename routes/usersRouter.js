@@ -72,10 +72,11 @@ router.post("/signup", async (req, res) => {
                   profileUrl,
                 })
                 .then((result) => {
+                  console.log("sign up : ", result);
                   res.send(result);
                 })
                 .catch((err) => {
-                  console.error(err);
+                  console.error("sign up error :", err);
                   res.send("error");
                 });
             } else {
